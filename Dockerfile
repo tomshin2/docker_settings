@@ -15,6 +15,8 @@ ARG MAKE_VERSION=4.2.1-11.el8
 ARG PKGCONF_VERSION=1.4.2-1.el8
 ARG WHICH_VERSION=2.21-20.el8
 ARG PYTHON312_VERSION=3.12.13-3.el8_10
+# Added Git Version Tracking Pin
+ARG GIT_VERSION=2.43.5-1.el8
 
 # 1. Clear package metadata and unlock the hidden developer repository channels
 RUN dnf clean all && dnf makecache --enablerepo=devel -y
@@ -37,7 +39,8 @@ RUN dnf versionlock add --enablerepo=devel \
     pkgconf-${PKGCONF_VERSION} \
     which-${WHICH_VERSION} \
     python3.12-${PYTHON312_VERSION} \
-    python3.12-devel-${PYTHON312_VERSION}
+    python3.12-devel-${PYTHON312_VERSION} \
+    git-${GIT_VERSION}
 
 # 4. Strict Deployment Block
 # We keep the hardcoded pins for compilers and languages, 
@@ -57,6 +60,7 @@ RUN dnf install -y --enablerepo=devel \
     which-${WHICH_VERSION} \
     python3.12-${PYTHON312_VERSION} \
     python3.12-devel-${PYTHON312_VERSION} \
+    git-${GIT_VERSION} \
     gdb \
     strace \
     && dnf clean all
