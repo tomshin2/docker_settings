@@ -2,6 +2,25 @@
 FROM rockylinux:8
 
 # ======================================================================
+# ROLE OF THIS IMAGE
+# ----------------------------------------------------------------------
+# Development + compile ONLY: npm install, Metro dev server, typecheck,
+# tests, expo export. Native tooling is intentionally absent:
+#   - iOS (Xcode/CocoaPods): macOS-only, impossible in a container — the
+#     Mac (macos/Brewfile.gui) builds + previews iOS.
+#   - Android (JDK 17/Android SDK/emulator): preview happens on the Mac;
+#     add java-17-openjdk + cmdline-tools ONLY if Android compile ever
+#     moves into the container.
+#
+# SDK-COUPLED KNOB (the only one):
+#   nodejs:22 major must stay in lockstep with the Mac's `node@22`
+#   (macos/Brewfile). Bump both together on an Expo SDK upgrade.
+#   Patch (22.23.1) is a reproducibility lock, NOT tied to the SDK.
+#
+# ENV: copy the real keys before running the dev server / export
+#   cp .env.example .env   (fill from Supabase -> Project Settings -> API)
+#
+# ======================================================================
 # TOOL MANIFEST — single source of truth
 # ----------------------------------------------------------------------
 # Add a line to install a tool, remove a line to drop it.
@@ -9,16 +28,20 @@ FROM rockylinux:8
 # (Rocky Linux 8.10).
 #
 #   TOOL_MANIFEST   : plain RPMs -> locked via `dnf versionlock`
-#   MODULE_MANIFEST : module streams to enable (Node.js, Go)
+#   MODULE_MANIFEST : module streams to enable (Node.js)
 #   MODULE_PINS     : exact NEVRAs of the module packages
 #   EPEL_RELEASE    : EPEL repo package (needed by ripgrep)
+#
+# Intentional exclusions for this JS-only project (see ROLE above):
+#   - flex / bison : parser generators, only needed to build from source
+#   - gdb / strace : native debuggers
+#   - go-toolset   : Go toolchain
+# Uncomment the lines below to re-enable any of them.
 # ======================================================================
 ARG TOOL_MANIFEST="\
     autoconf-2.69-29.el8_10.1 \
     automake-1.16.1-8.el8 \
     binutils-2.30-128.el8_10 \
-    bison-3.0.4-10.el8 \
-    flex-2.6.1-9.el8 \
     gcc-8.5.0-28.el8_10 \
     gcc-c++-8.5.0-28.el8_10 \
     glibc-devel-2.28-251.el8_10.40 \
@@ -30,19 +53,17 @@ ARG TOOL_MANIFEST="\
     python3.12-devel-3.12.13-3.el8_10 \
     python3.12-pip-23.2.1-4.el8 \
     git-2.43.7-1.el8_10 \
-    gdb-8.2-20.el8.0.1 \
-    strace-5.18-2.1.el8_10 \
     ripgrep-14.1.1-1.el8 \
-    jq-1.6-12.el8_10 \
+    jq-1.6-12.el8 \
     tree-1.7.0-15.el8 \
-    wget-1.19.5-12.el8_10 \
+    wget-1.19.5-12.el8 \
     zsh-5.5.1-10.el8"
 
-ARG MODULE_MANIFEST="nodejs:22 go-toolset:rhel8"
+# go-toolset: not needed for this JS-only project; uncomment if you want Go.
+ARG MODULE_MANIFEST="nodejs:22"
 ARG MODULE_PINS="\
     nodejs-22.23.1-2.module+el8.10.0+40261+cde646a4 \
-    npm-10.9.8-1.22.23.1.2.module+el8.10.0+40261+cde646a4 \
-    golang-1.26.5-1.module+el8.10.0+40244+e7cb3ff8"
+    npm-10.9.8-1.22.23.1.2.module+el8.10.0+40261+cde646a4"
 
 ARG EPEL_RELEASE=epel-release-8-22.el8
 
